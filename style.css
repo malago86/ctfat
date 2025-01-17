@@ -198,3 +198,10 @@ img.sample:hover{
     stroke-dashoffset: 188.50; /* Initially fully offset */
     /* transition: 0.3s ease; */
 }
+
+.memory{
+    position:absolute;
+    top:-22px;
+    right:1%;
+    color:white;
+}

@@ -16,6 +16,11 @@ var ctfPlot = [];
 
 $(document).ready(function () {
 
+    setInterval(function(){
+        percMem=100*(window.performance.memory.totalJSHeapSize/window.performance.memory.jsHeapSizeLimit).toFixed(2);;
+        $(".memory").html(`Memory: ${percMem}%`);
+    },10000)
+
     $.get("README.md").done(function (data) {
         $(".content[content='description']").html(marked.parse(data));
         $(".content[content='description']").show();
