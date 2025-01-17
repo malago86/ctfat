@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Contrast Transfer Function Analysis Tool</title>
+    <!-- <link rel="icon" href="favicon.svg" sizes="any" type="image/svg+xml"> -->
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script src="js/marked.min.js"></script>
+    <script src="js/plotly-2.35.2.min.js" charset="utf-8"></script>
+    <script src="js/image.min.js"></script>
+    <script type="text/javascript" src="js/fft.js"></script>
+    <script type="text/javascript" src="js/scripts.js"></script>
+
+</head>
+
+<body id="consult">
+    <h1><span class="title">Contrast Transfer Function Analysis Tool</span></h1>
+    <ul class="tabs">
+        <li content="description" class="active">Description</li>
+        <li content="tool">Tool</li>
+    </ul>
+    <div class="content" content="description"></div>
+    <div class="content" content="tool">
+        <div class="left">
+            <table>
+                <tr>
+                    <th>LMD/Camera<br>Horizontal FOV (deg)</th>
+                    <td><input type="text" name="fov" placeholder="Enter FOV Value" value="15.5"></td>
+                </tr>
+                <tr>
+                    <th>Pattern Direction</th>
+                    <td> <input type="radio" name="direction" value="vertical" id="vertical" checked>
+                        <label for="vertical">Vertical</label>
+                        <input type="radio" name="direction" value="horizontal" id="horizontal">
+                        <label for="horizontal">Horizontal</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Flat white images</th>
+                    <td><input type="file" id="flatfield" name="flatfield" webkitdirectory mozdirectory /></td>
+                </tr>
+                <tr>
+                    <th>Acquired Images:</th>
+                    <td><input type="file" id="images" name="images" webkitdirectory mozdirectory /></td>
+                </tr>
+            </table>
+            <input type="button" value="Plot CTF" id="start-plot">
+        </div>
+        <div class="right">
+            <div id="plot"></div>
+            <div id="progress">
+                <svg class="progress-circle" viewBox="0 0 100 100">
+                    <circle class="circle" cx="50" cy="50" r="30" stroke-width="20" fill="none"></circle>
+                </svg>
+                <!-- <div class="loaded"><div class="progress"></div></div> -->
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
