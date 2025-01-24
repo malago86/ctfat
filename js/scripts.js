@@ -11,15 +11,16 @@ var loadedCount = 0;
 var flatFieldLoadedCount = 0;
 var filterData = null;
 var fov = 0;
+var imageWidth = null;
 
 var ctfPlot = [];
 
 $(document).ready(function () {
 
-    setInterval(function(){
-        percMem=100*(window.performance.memory.totalJSHeapSize/window.performance.memory.jsHeapSizeLimit).toFixed(2);;
+    setInterval(function () {
+        percMem = 100 * (window.performance.memory.totalJSHeapSize / window.performance.memory.jsHeapSizeLimit).toFixed(2);;
         $(".memory").html(`Memory: ${percMem}%`);
-    },10000)
+    }, 10000)
 
     $.get("README.md").done(function (data) {
         $(".content[content='description']").html(marked.parse(data));
@@ -48,23 +49,21 @@ $(document).ready(function () {
         $(".right").addClass("loading");
         setProgress(1);
 
-        if($("input[name=direction]:checked").val()=="horizontal"){
-            // TODO: CHECK THESE VALUES
-            NumOfPixelsPerDegree = plotData[0][0][0].length / fov;
-            fov = plotData[0][0].length / NumOfPixelsPerDegree;
+        if (flatfields.length) {
+            $.each(flatfields, function (i, e) {
+                var fr = new FileReader();
+                fr.onload = flatfieldLoaded;
+                //fr.readAsText(file);
+                //fr.readAsBinaryString(file); //as bit work with base64 for example upload to server
+                // console.log(e);
+                fr.readAsDataURL(e);
+                path = e.webkitRelativePath.split("/");
+                fr.num = i;
+                fr.imageNumber = path[path.length - 2]
+            });
+        } else {
+            loadAcquiredImages();
         }
-
-        $.each(flatfields, function (i, e) {
-            var fr = new FileReader();
-            fr.onload = flatfieldLoaded;
-            //fr.readAsText(file);
-            //fr.readAsBinaryString(file); //as bit work with base64 for example upload to server
-            // console.log(e);
-            fr.readAsDataURL(e);
-            path = e.webkitRelativePath.split("/");
-            fr.num = i;
-            fr.imageNumber = path[path.length - 2]
-        });
         // console.log(acquired);
     });
 });
@@ -143,7 +142,11 @@ async function fileLoaded(f) {
     // console.log(f);
     let image = await IJS.Image.load(f.srcElement.result);
 
-    if($("input[name=direction]:checked").val()=="horizontal"){
+    if (!imageWidth) {
+        imageWidth = image.width;
+    }
+
+    if ($("input[name=direction]:checked").val() == "horizontal") {
         image = image.rotate(90);
     }
 
@@ -179,41 +182,61 @@ async function fileLoaded(f) {
                     // console.log(e);
                     avg = averageOfMatrixColumns(averageOfMatrices(e));
                     avg = avg.map(float => Math.round(float));
-                    ret = processCTF(avg);
+                    ret = processCTF(avg.filter(Number.isFinite), imageWidth);
                     ctfPlot[i] = ret;
 
                     // Plotly.addTraces("plot", [
-                    //     {
-                    //         x: ret["smooth"].length,
-                    //         y: ret["smooth"],
-                    //         name: "Smooth " + i
-                    //     },
-                    //     {
-                    //         x: ret["interp"].length,
-                    //         y: ret["interp"],
-                    //         name: "Interp " + i
-                    //     }
+                    //     // {
+                    //     //     x: ret["smooth"].length,
+                    //     //     y: ret["smooth"],
+                    //     //     name: "Smooth " + i
+                    //     // },
+                    //     // {
+                    //     //     x: ret["interp"].length,
+                    //     //     y: ret["interp"],
+                    //     //     name: "Interp " + i
+                    //     // }
+
+                    //     // {
+                    //     //     x: ret["signal"].length,
+                    //     //     y: ret["signal"],
+                    //     //     name: "Signal " + i
+                    //     // },
+                    //     // {
+                    //     //     x: ret["binary"].length,
+                    //     //     y: ret["binary"],
+                    //     //     name: "Binary " + i
+                    //     // }
                     // ]
                     // );
                 }
             })
         ).then(function () {
-            Plotly.addTraces("plot", [{
-                    x: ctfPlot.map(x => x["ctf"]["x"]),
-                    y: ctfPlot.map(x => x["ctf"]["y"]),
+            filteredCtfPlot = ctfPlot.filter(function (e) {
+                return e["ctf"]["y"];
+            })
+            Plotly.addTraces("plot", [
+                {
+                    x: filteredCtfPlot.map(x => x["ctf"]["x"]),
+                    y: filteredCtfPlot.map(x => x["ctf"]["y"]),
+                    error_y: {
+                        type: 'data',
+                        array: filteredCtfPlot.map(x => x["ctf"]["std"]),
+                        visible: true
+                    },
                     name: "CTF",
                     marker: {
-                        size: 12 // Set the marker size (in pixels)
+                        size: 10 // Set the marker size (in pixels)
                     },
                     line: {
-                        width: 4 // Set the line width here
+                        width: 3 // Set the line width here
                     }
                 }
-                ]
+            ]
             );
             Plotly.relayout("plot", {
                 'xaxis.autorange': true
-              });
+            });
         });
         $(".loaded .progress").html("All images loaded!");
     }
@@ -322,7 +345,7 @@ function graythresh(grayImage) {
 
 function binarizeSignal(data) {
     // threshold = graythresh(data);
-    threshold = Math.round(Math.max(...data) / 2);
+    threshold = Math.round(Math.max(...data.filter(Number.isFinite)) / 2);
     // console.log(threshold, data);
     binary = data.map(value => (value >= threshold ? 1 : 0));
     return binary;
@@ -346,7 +369,7 @@ function fourier_trans(FoV, img) {
 
     for (let i2 = 0; i2 < 200; i2++) {
         // Extract a row from the image
-        const L_temp = img[Math.floor(Ny / 2) - 100 + i2].slice(0, 2048);
+        const L_temp = img[Math.floor(Ny / 2) - 100 + i2].slice(0, Nx);
         L[i2] = [...L_temp]; // Copy the row
 
         // Calculate FFT and shift the spectrum
@@ -354,7 +377,7 @@ function fourier_trans(FoV, img) {
         Fourier.transform(L_temp, out);
         out = out.map(val => val.magnitude());
 
-        fft_L[i2] = Fourier.shift(out, [1, out.length]);
+        fft_L[i2] = fftshift(out);
     }
     // console.log(fft_L);
 
@@ -375,7 +398,7 @@ function fourier_trans(FoV, img) {
     // console.log(log_fft_L);
 
     // Find the index of the maximum value in log_fft_L
-    const N_fc = argmax(log_fft_L);
+    const N_fc = argmax(log_fft_L.filter(Number.isFinite));
 
     // Calculate fc, HMD_pixel_pitch, and HMD_pixel_pitch_NumImgPix
     const fc = fx[N_fc];
@@ -383,6 +406,19 @@ function fourier_trans(FoV, img) {
     const HMD_pixel_pitch_NumImgPix = HMD_pixel_pitch / ax;
 
     return { x, L, fx, fft_L, fc, HMD_pixel_pitch, HMD_pixel_pitch_NumImgPix };
+}
+
+function fftshift(inputArray) {
+    const N = inputArray.length;
+    const half = Math.floor(N / 2);
+
+    const outputArray = new Array(N);
+
+    for (let i = 0; i < N; i++) {
+        outputArray[i] = inputArray[(i + half) % N];
+    }
+
+    return outputArray;
 }
 
 function mean(arr) {
@@ -452,12 +488,15 @@ function movingAverageFilter(Signal, filterSize) {
     return Out;
 }
 
-function processCTF(data) {
+function processCTF(data, imageWidth) {
     pixelsPerDegree = Math.round(data.length / fov);
 
     // ftSize = fourier_trans(FOV, Img);
     // console.log(filterData);
-    filterSize = oddFilterSize(Math.abs(filterData["HMD_pixel_pitch_NumImgPix"]));
+    if (filterData)
+        filterSize = oddFilterSize(Math.abs(filterData["HMD_pixel_pitch_NumImgPix"]));
+    else
+        filterSize = 1;
 
     smoothSignal = movingAverageFilter(data, filterSize);
 
@@ -465,16 +504,16 @@ function processCTF(data) {
 
     binary = binarizeSignal(smoothSignal);
 
-    difference = binary.reduce(function (a, e, i, arr) {
-        if (i < arr.length - 1) {
-            a.push(arr[i + 1] - arr[i])
+    peaks = binary.reduce(function (a, e, i, arr) {
+        if (i < arr.length - 1 && arr[i] == 0 & arr[i + 1] == 1) {
+            a.push(i);
         }
         return a;
     }, []);
 
-    peaks = binary.reduce(function (a, e, i, arr) {
-        if (i < arr.length - 1 && arr[i] == 0 & arr[i + 1] == 1) {
-            a.push(i);
+    difference = peaks.slice(1, peaks.length - 1).reduce(function (a, e, i, arr) {
+        if (i < arr.length - 1) {
+            a.push(arr[i + 1] - arr[i])
         }
         return a;
     }, []);
@@ -486,10 +525,10 @@ function processCTF(data) {
         return a;
     }, []);
 
-    numberOfPeaks = peaks.length
+    numberOfPeaks = peaks.length - 2;
 
     if (standardDeviation(difference) < 10 && numberOfPeaks >= 3) {
-        sizeOfFilter = (peaks[peaks.length - 1] - peaks[0]) / (numberOfPeaks - 1) / 2;
+        sizeOfFilter = (peaks[peaks.length - 2] - peaks[1]) / (numberOfPeaks - 1) / 2;
         if (peaks[0] < valleys[0]) {
             firstPeak = peaks[0];
             lastPeak = peaks[peaks.length - 1]
@@ -503,6 +542,7 @@ function processCTF(data) {
         numberOfPeaks = 0;
         firstPeak = 0;
         lastPeak = 0;
+        sizeOfFilter = 1;
     }
 
     filterSize = computeFilterSize(firstPeak, sizeOfFilter);
@@ -518,7 +558,7 @@ function processCTF(data) {
 
     points = errorBar(interp, pixelsPerDegree);
 
-    ctf = 1 / (filterSize["Signal_period"][0] * fov / data.length);
+    ctf = 1 / (filterSize["Signal_period"][0] * fov / imageWidth);
 
     // console.log(ctf);
     return {
@@ -598,8 +638,8 @@ function dataEnvelope(Signal_period, Crop_X, ResultedSignal) {
 
 function michelsonContrast(Signal) {
     // Find the maximum and minimum values in the signal
-    const Imax = Math.max(...Signal);
-    const Imin = Math.min(...Signal);
+    const Imax = Math.max(...Signal.filter(Number.isFinite));
+    const Imin = Math.min(...Signal.filter(Number.isFinite));
 
     // Calculate the Michelson Contrast
     const Contrast = (Imax - Imin) / (Imax + Imin);

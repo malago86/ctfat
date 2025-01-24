@@ -12,13 +12,14 @@
     <script type="text/javascript" src="js/fft.js"></script>
     <script type="text/javascript" src="js/scripts.js"></script>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
     <h1><span class="title">Contrast Transfer Function Analysis Tool</span></h1>
     <ul class="tabs">
-        <li content="description" class="active">Description</li>
-        <li content="tool">Tool</li>
+        <li content="description" class="active"><i class="fa-regular fa-file-lines"></i> Description</li>
+        <li content="tool"><i class="fa-solid fa-chart-line"></i> Tool</li>
     </ul>
     <div class="content" content="description"></div>
     <div class="content" content="tool">
@@ -32,9 +33,9 @@
                 <tr>
                     <th>Pattern Direction</th>
                     <td> <input type="radio" name="direction" value="vertical" id="vertical" checked>
-                        <label for="vertical">Vertical</label>
+                        <label for="vertical"><i class="fa-solid fa-bars" style="transform:rotate(90deg)"></i></label>
                         <input type="radio" name="direction" value="horizontal" id="horizontal">
-                        <label for="horizontal">Horizontal</label>
+                        <label for="horizontal"><i class="fa-solid fa-bars"></i></label>
                     </td>
                 </tr>
                 <tr>
@@ -46,7 +47,7 @@
                     <td><input type="file" id="images" name="images" webkitdirectory mozdirectory /></td>
                 </tr>
             </table>
-            <input type="button" value="Plot CTF" id="start-plot">
+            <div id="start-plot">Plot CTF</div>
         </div>
         <div class="right">
             <div id="plot"></div>

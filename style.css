@@ -19,146 +19,185 @@ body {
     display: block;
 }
 
-a{
-    color:rgb(0, 124, 186);
+a {
+    color: rgb(0, 124, 186);
 }
 
 h1 {
     text-align: center;
-    padding:20px;
-    background:rgb(0, 124, 186);
-    color:white;
-    margin:10px 0 0 0;
+    padding: 20px;
+    background: rgb(0, 124, 186);
+    color: white;
+    margin: 10px 0 0 0;
 }
 
-.content{
+.content {
     display: none;
-    padding:10px;
-    clear:both;
-    position:relative;
-    min-height:400px;
+    padding: 10px;
+    clear: both;
+    position: relative;
+    min-height: 400px;
 }
 
-.left{
-    width:33%;
-    display:inline-block;
+.left {
+    width: 33%;
+    display: inline-block;
     position: absolute;
-    top:20px;
-    left:20px;
+    top: 20px;
+    left: 20px;
 }
 
-.left tr td, .left tr th{
-    padding-bottom:10px;
+.left tr td,
+.left tr th {
+    padding-bottom: 10px;
 }
 
-.right{
-    width:60%;
-    display:inline-block;
-    position:absolute;
-    right:0;
-    top:20px;
+.right {
+    width: 60%;
+    display: inline-block;
+    position: absolute;
+    right: 0;
+    top: 20px;
 }
 
-#plot{
-    margin-top:10px;
+#plot {
+    margin-top: 10px;
 }
 
-img{
-    width:80%;
-    
+img {
+    width: 80%;
+
 }
 
-.tabs{
-    margin:0;
-    margin-top:-40px;
+.tabs {
+    margin: 0;
+    margin-top: -40px;
 }
 
-.tabs li{
-    background:rgb(0, 124, 186);
-    color:white;
-    float:left;
+.tabs li {
+    background: rgb(0, 124, 186);
+    color: white;
+    float: left;
     list-style: none;
-    padding:5px 10px;
-    outline: 1px solid white;    margin-top: 1px;
+    padding: 5px 10px;
+    outline: 1px solid white;
+    margin-top: 1px;
     margin-left: 1px;
 }
 
-.tabs li.active{
-    filter:brightness(1.3);
+.tabs li.active {
+    filter: brightness(1.3);
 }
 
-.tabs li:hover{
+.tabs li:hover {
     transition: .2s;
     cursor: pointer;
-    filter:brightness(1.3)
+    filter: brightness(1.3)
 }
 
-p,.dt-container{
-    margin:5px 5px; 
-}
-table.dataTable{
-    width:100% !important;
-}
-#ssynth-table tr td, #ssynth-table tr th{
-    text-align:center;
-    padding:5px 0px;
+p,
+.dt-container {
+    margin: 5px 5px;
 }
 
-#ssynth-table th{
-    background:rgb(0, 124, 186);
-    color:white;
+table.dataTable {
+    width: 100% !important;
+}
+
+#ssynth-table tr td,
+#ssynth-table tr th {
+    text-align: center;
+    padding: 5px 0px;
+}
+
+#ssynth-table th {
+    background: rgb(0, 124, 186);
+    color: white;
     text-transform: uppercase;
 }
 
-#ssynth-table tr{
-    background-color:rgb(198, 236, 255);
+#ssynth-table tr {
+    background-color: rgb(198, 236, 255);
 }
 
-#ssynth-table tr:nth-child(even){
-    background-color:rgb(224, 244, 255)
+#ssynth-table tr:nth-child(even) {
+    background-color: rgb(224, 244, 255)
 }
 
-input{
+input {
     border: 1px solid rgb(0, 124, 186);
     border-radius: 3px;
     padding: 5px;
     margin-left: 3px;
 }
-input[type=file]{
-    width:150px;
-}
-input[type=button]{
-    width:calc(100% - 40px);
+
+input[type=file] {
+    width: 150px;
 }
 
-input[type=button]:hover, input[type=file]:hover{
-    background:rgb(0, 124, 186);
-    cursor:pointer;
-    color:white;
-}
-input::file-selector-button{
-    display:none
+#start-plot {
+    width: calc(100% - 40px);
+    text-align: center;
+    border: 1px solid rgb(0, 124, 186);
+    border-radius: 3px;
+    padding: 5px;
+    background-color: #ddd;
+    font-weight: bold;
 }
 
-img.sample:hover{
-    cursor:pointer;
+input[type="radio"] {
+    opacity: 0;
+    position: fixed;
+    width: 0;
+}
+
+label {
+    display: inline-block;
+    background-color: #ddd;
+    padding: 5px 10px;
+    font-family: sans-serif, Arial;
+    font-size: 20px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+input[type="radio"]:checked+label {
+    background-color: rgb(0, 124, 186);
+    color: white;
+}
+
+input[type=button]:hover,
+input[type=file]:hover,
+#start-plot:hover {
+    background: rgb(0, 124, 186);
+    cursor: pointer;
+    color: white;
+}
+
+input::file-selector-button {
+    display: none
+}
+
+img.sample:hover {
+    cursor: pointer;
     transform: scale(1.1);
     transition: 0.25s;
 }
 
-.loaded{
-    width:auto;
+.loaded {
+    width: auto;
     position: relative;
     text-align: center;
     padding: 5px;
     margin: 3px;
     background-color: #69cdff;
     border-radius: 3px;
-    height:30px;
+    height: 30px;
     line-height: 40px;
 }
-.loaded .progress{
-    background:rgb(0, 124, 186);
+
+.loaded .progress {
+    background: rgb(0, 124, 186);
     position: absolute;
     top: 0;
     bottom: 100%;
@@ -168,40 +207,45 @@ img.sample:hover{
     border-radius: 3px;
     overflow: hidden;
     text-overflow: ellipsis;
-    color:white;
+    color: white;
 }
 
-#progress{
-    position:absolute;
+#progress {
+    position: absolute;
     top: 20%;
     right: 40%;
     left: 40%;
-    display:none;
+    display: none;
 }
 
-.right.loading #plot{
-    filter:opacity(.5);
+.right.loading #plot {
+    filter: opacity(.5);
 }
 
-.right.loading #progress{
-    display:block;
+.right.loading #progress {
+    display: block;
 }
 
-.progress-circle{
-    width:100%;
-    float:right;
+.progress-circle {
+    width: 100%;
+    float: right;
     rotate: -90deg;
 }
+
 .progress-circle .circle {
-    stroke: rgb(0, 124, 186);; /* Default circle color */
-    stroke-dasharray: 188.50; /* Circumference of the circle */
-    stroke-dashoffset: 188.50; /* Initially fully offset */
+    stroke: rgb(0, 124, 186);
+    ;
+    /* Default circle color */
+    stroke-dasharray: 188.50;
+    /* Circumference of the circle */
+    stroke-dashoffset: 188.50;
+    /* Initially fully offset */
     /* transition: 0.3s ease; */
 }
 
-.memory{
-    position:absolute;
-    top:-22px;
-    right:1%;
-    color:white;
+.memory {
+    position: absolute;
+    top: -22px;
+    right: 1%;
+    color: white;
 }
