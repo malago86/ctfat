@@ -1,208 +1,194 @@
-/******************\
-|   Fourier Image  |
-| @author Anthony  |
-| @version 1.1.2   |
-| @date 2014/06/14 |
-| @edit 2017/01/23 |
-\******************/
-
-var Fourier = (function() {
-    /******************
-     * work functions */
-    function filter(data, dims, lowPass, highPass) {
-      var lowPassSq = Math.pow(lowPass, 2);
-      var highPassSq = Math.pow(highPass, 2);
-      var N = dims[1];
-      var M = dims[0];
-      for (var k = 0; k < N; k++) {
-        for (var l = 0; l < M; l++) {
-          var idx = k*M + l;
-          var d = Math.pow(k-M/2, 2) + Math.pow(l-N/2, 2);
-          if (
-            d > lowPassSq && isNaN(highPass) ||
-            d < highPassSq && isNaN(lowPass) ||
-            d < lowPassSq && !isNaN(lowPass) && !isNaN(highPass) ||
-            d > highPassSq && !isNaN(lowPass) && !isNaN(highPass)
-          ) {
-            data[idx] = new Fourier.Complex(0, 0);
-          }
+/*
+ * Free FFT and convolution (compiled from TypeScript)
+ *
+ * Copyright (c) 2022 Project Nayuki. (MIT License)
+ * https://www.nayuki.io/page/free-small-fft-in-multiple-languages
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ * - The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ * - The Software is provided "as is", without warranty of any kind, express or
+ *   implied, including but not limited to the warranties of merchantability,
+ *   fitness for a particular purpose and noninfringement. In no event shall the
+ *   authors or copyright holders be liable for any claim, damages or other
+ *   liability, whether in an action of contract, tort or otherwise, arising from,
+ *   out of or in connection with the Software or the use or other dealings in the
+ *   Software.
+ */
+"use strict";
+/*
+ * Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
+ * The vector can have any length. This is a wrapper function.
+ */
+function transform(real, imag) {
+    const n = real.length;
+    if (n != imag.length)
+        throw new RangeError("Mismatched lengths");
+    if (n == 0)
+        return;
+    else if ((n & (n - 1)) == 0) // Is power of 2
+        transformRadix2(real, imag);
+    else // More complicated algorithm for arbitrary sizes
+        transformBluestein(real, imag);
+}
+/*
+ * Computes the inverse discrete Fourier transform (IDFT) of the given complex vector, storing the result back into the vector.
+ * The vector can have any length. This is a wrapper function. This transform does not perform scaling, so the inverse is not a true inverse.
+ */
+function inverseTransform(real, imag) {
+    transform(imag, real);
+}
+/*
+ * Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
+ * The vector's length must be a power of 2. Uses the Cooley-Tukey decimation-in-time radix-2 algorithm.
+ */
+function transformRadix2(real, imag) {
+    // Length variables
+    const n = real.length;
+    if (n != imag.length)
+        throw new RangeError("Mismatched lengths");
+    if (n == 1) // Trivial transform
+        return;
+    let levels = -1;
+    for (let i = 0; i < 32; i++) {
+        if (1 << i == n)
+            levels = i; // Equal to log2(n)
+    }
+    if (levels == -1)
+        throw new RangeError("Length is not a power of 2");
+    // Trigonometric tables
+    let cosTable = new Array(n / 2);
+    let sinTable = new Array(n / 2);
+    for (let i = 0; i < n / 2; i++) {
+        cosTable[i] = Math.cos(2 * Math.PI * i / n);
+        sinTable[i] = Math.sin(2 * Math.PI * i / n);
+    }
+    // Bit-reversed addressing permutation
+    for (let i = 0; i < n; i++) {
+        const j = reverseBits(i, levels);
+        if (j > i) {
+            let temp = real[i];
+            real[i] = real[j];
+            real[j] = temp;
+            temp = imag[i];
+            imag[i] = imag[j];
+            imag[j] = temp;
         }
-      }
     }
-  
-    function FFT(sig, out) {
-      if (sig.length === 0) {
-        var e = new Error("Cannot transform an image with size of zero.");
-        e.name = RangeError;
-        e.givenLength = sig.length;
-        throw e;
-      }
-      if (sig.length & (sig.length - 1)) {
-        var e = new Error("Unimplemented: Only FFT of signals of length power of 2 supported by this implementation. Given: " + sig.length);
-        e.name = RangeError;
-        e.givenLength = sig.length;
-        throw e;
-      }
-      rec_FFT_radix2(out, 0, sig, 0, sig.length, 1, 2);
-    }
-  
-    function rec_FFT_radix2(out, start, sig, offset, N, s) {
-      if (N === 1) {
-        out[start] = new Complex(sig[offset], 0); // array
-      } else {
-        rec_FFT_radix2(out, start, sig, offset, N/2, 2*s);
-        rec_FFT_radix2(out, start+N/2, sig, offset+s, N/2, 2*s);
-        for (var k = 0; k < N/2; k++) {
-          var twiddle = cisExp(-2*Math.PI*k/N);
-          var t = out[start+k];
-          out[start+k] = t.plus(twiddle.times(out[start+k+N/2]));
-          out[start+k+N/2] = t.minus(
-            twiddle.times(out[start+k+N/2])
-          );
+    // Cooley-Tukey decimation-in-time radix-2 FFT
+    for (let size = 2; size <= n; size *= 2) {
+        const halfsize = size / 2;
+        const tablestep = n / size;
+        for (let i = 0; i < n; i += size) {
+            for (let j = i, k = 0; j < i + halfsize; j++, k += tablestep) {
+                const l = j + halfsize;
+                const tpre = real[l] * cosTable[k] + imag[l] * sinTable[k];
+                const tpim = -real[l] * sinTable[k] + imag[l] * cosTable[k];
+                real[l] = real[j] - tpre;
+                imag[l] = imag[j] - tpim;
+                real[j] += tpre;
+                imag[j] += tpim;
+            }
         }
-      }
     }
-  
-    function invFFT(transform, sig) {
-      if (transform.length === 0) {
-        var e = new Error("Cannot transform an image with size of zero.");
-        e.name = RangeError;
-        e.givenLength = transform.length;
-        throw e;
-      }
-      if (transform.length & (transform.length - 1)) {
-        var e = new Error("Unimplemented: Only FFT of signals of length power of 2 supported by this implementation. Given: " + transform.length);
-        e.name = RangeError;
-        e.givenLength = transform.length;
-        throw e;
-      }
-      rec_invFFT_radix2(sig, 0, transform, 0, transform.length, 1);
-      for (var ai = 0; ai < sig.length; ai++) {
-        sig[ai] = sig[ai].real/sig.length;
-      }
-    }
-  
-    function rec_invFFT_radix2(sig, start, transform, offset, N, s) {
-      if (N === 1) {
-        sig[start] = transform[offset];
-      } else {
-        rec_invFFT_radix2(sig, start, transform, offset, N/2, 2*s);
-        rec_invFFT_radix2(sig, start+N/2, transform, offset+s, N/2, 2*s);
-        for (var k = 0; k < N/2; k++) {
-          var twiddle = cisExp(2*Math.PI*k/N);
-          var t = sig[start+k];
-          sig[start+k] = t.plus(twiddle.times(sig[start+k+N/2]));
-          sig[start+k+N/2] = t.minus(
-            twiddle.times(sig[start+k+N/2])
-          );
+    // Returns the integer whose value is the reverse of the lowest 'width' bits of the integer 'val'.
+    function reverseBits(val, width) {
+        let result = 0;
+        for (let i = 0; i < width; i++) {
+            result = (result << 1) | (val & 1);
+            val >>>= 1;
         }
-      }
+        return result;
     }
-    
-    function shiftFFT(transform, dims) {
-      return flipRightHalf(
-        halfShiftFFT(
-          halfShiftFFT(
-            transform,
-            dims
-          ),
-          dims
-        ),
-        dims
-      );
+}
+/*
+ * Computes the discrete Fourier transform (DFT) of the given complex vector, storing the result back into the vector.
+ * The vector can have any length. This requires the convolution function, which in turn requires the radix-2 FFT function.
+ * Uses Bluestein's chirp z-transform algorithm.
+ */
+function transformBluestein(real, imag) {
+    // Find a power-of-2 convolution length m such that m >= n * 2 + 1
+    const n = real.length;
+    if (n != imag.length)
+        throw new RangeError("Mismatched lengths");
+    let m = 1;
+    while (m < n * 2 + 1)
+        m *= 2;
+    // Trigonometric tables
+    let cosTable = new Array(n);
+    let sinTable = new Array(n);
+    for (let i = 0; i < n; i++) {
+        const j = i * i % (n * 2); // This is more accurate than j = i * i
+        cosTable[i] = Math.cos(Math.PI * j / n);
+        sinTable[i] = Math.sin(Math.PI * j / n);
     }
-  
-    function unshiftFFT(transform, dims) {
-      return halfShiftFFT(
-        halfShiftFFT(
-          flipRightHalf(
-            transform,
-            dims
-          ),
-          dims
-        ),
-        dims
-      );
+    // Temporary vectors and preprocessing
+    let areal = newArrayOfZeros(m);
+    let aimag = newArrayOfZeros(m);
+    for (let i = 0; i < n; i++) {
+        areal[i] = real[i] * cosTable[i] + imag[i] * sinTable[i];
+        aimag[i] = -real[i] * sinTable[i] + imag[i] * cosTable[i];
     }
-  
-    function halfShiftFFT(transform, dims) {
-      var ret = [];
-      var N = dims[1];
-      var M = dims[0];
-      for (var n = 0, vOff = N/2; n < N; n++) {
-        for (var m = 0; m < M/2; m++) {
-          var idx = vOff*dims[0] + m;
-          ret.push(transform[idx]);
-        }
-        vOff += vOff >= N/2 ? -N/2 : (N/2)+1;
-      }
-      for (var n = 0, vOff = N/2; n < N; n++) {
-        for (var m = M/2; m < M; m++) {
-          var idx = vOff*dims[0] + m;
-          ret.push(transform[idx]);
-        }
-        vOff += vOff >= N/2 ? -N/2 : (N/2)+1;
-      }
-      return ret;
+    let breal = newArrayOfZeros(m);
+    let bimag = newArrayOfZeros(m);
+    breal[0] = cosTable[0];
+    bimag[0] = sinTable[0];
+    for (let i = 1; i < n; i++) {
+        breal[i] = breal[m - i] = cosTable[i];
+        bimag[i] = bimag[m - i] = sinTable[i];
     }
-  
-    function flipRightHalf(transform, dims) {
-      var ret = [];
-    
-      // flip the right half of the image across the x axis
-      var N = dims[1];
-      var M = dims[0];
-      for (var n = 0; n < N; n++) {
-        for (var m = 0; m < M; m++) {
-          var $n = m < M/2 ? n : (N-1)-n;
-          var idx = $n*dims[0] + m;
-          ret.push(transform[idx]);
-        }
-      }
-    
-      return ret;
+    // Convolution
+    let creal = new Array(m);
+    let cimag = new Array(m);
+    convolveComplex(areal, aimag, breal, bimag, creal, cimag);
+    // Postprocessing
+    for (let i = 0; i < n; i++) {
+        real[i] = creal[i] * cosTable[i] + cimag[i] * sinTable[i];
+        imag[i] = -creal[i] * sinTable[i] + cimag[i] * cosTable[i];
     }
-    
-    /********************
-     * helper functions */
-    function cisExp(x) { // e^ix = cos x + i*sin x
-      return new Complex(Math.cos(x), Math.sin(x));
+}
+/*
+ * Computes the circular convolution of the given real vectors. Each vector's length must be the same.
+ */
+function convolveReal(xvec, yvec, outvec) {
+    const n = xvec.length;
+    if (n != yvec.length || n != outvec.length)
+        throw new RangeError("Mismatched lengths");
+    convolveComplex(xvec, newArrayOfZeros(n), yvec, newArrayOfZeros(n), outvec, newArrayOfZeros(n));
+}
+/*
+ * Computes the circular convolution of the given complex vectors. Each vector's length must be the same.
+ */
+function convolveComplex(xreal, ximag, yreal, yimag, outreal, outimag) {
+    const n = xreal.length;
+    if (n != ximag.length || n != yreal.length || n != yimag.length
+        || n != outreal.length || n != outimag.length)
+        throw new RangeError("Mismatched lengths");
+    xreal = xreal.slice();
+    ximag = ximag.slice();
+    yreal = yreal.slice();
+    yimag = yimag.slice();
+    transform(xreal, ximag);
+    transform(yreal, yimag);
+    for (let i = 0; i < n; i++) {
+        const temp = xreal[i] * yreal[i] - ximag[i] * yimag[i];
+        ximag[i] = ximag[i] * yreal[i] + xreal[i] * yimag[i];
+        xreal[i] = temp;
     }
-    
-    /***********
-     * objects */
-    function Complex(re, im) {
-      this.real = re;
-      this.imag = im;
+    inverseTransform(xreal, ximag);
+    for (let i = 0; i < n; i++) { // Scaling (because this FFT implementation omits it)
+        outreal[i] = xreal[i] / n;
+        outimag[i] = ximag[i] / n;
     }
-    Complex.prototype.magnitude2 = function() {
-      return this.real*this.real + this.imag*this.imag;
-    };
-    Complex.prototype.magnitude = function() {
-      return Math.sqrt(this.magnitude2());
-    };
-    Complex.prototype.plus = function(z) {
-      return new Complex(this.real+z.real, this.imag+z.imag);
-    };
-    Complex.prototype.minus = function(z) {
-      return new Complex(this.real-z.real, this.imag-z.imag);
-    };
-    Complex.prototype.times = function(z) {
-      if (typeof z === 'object') { // complex multiplication
-        var rePart = this.real*z.real - this.imag*z.imag;
-        var imPart = this.real*z.imag + this.imag*z.real;
-        return new Complex(rePart, imPart);
-      } else { // scalar multiplication
-        return new Complex(z*this.real, z*this.imag);
-      }
-    };
-    
-    return {
-      Complex: Complex,
-      transform: FFT,
-      invert: invFFT,
-      shift: shiftFFT,
-      unshift: unshiftFFT,
-      filter: filter
-    };
-  })();
+}
+function newArrayOfZeros(n) {
+    let result = [];
+    for (let i = 0; i < n; i++)
+        result.push(0);
+    return result;
+}

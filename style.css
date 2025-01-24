@@ -249,3 +249,27 @@ img.sample:hover {
     right: 1%;
     color: white;
 }
+
+#colors {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#colors li {
+    list-style-type: none;
+    margin-right: 10px;
+    float: left;
+}
+
+#colors li span {
+    text-align: center;
+    border: 1px solid rgb(0, 124, 186);
+    border-radius: 3px;
+    padding: 5px;
+    background-color: #ddd;
+    font-weight: bold;
+    margin-left: 5px;
+    min-width: 100px;
+    display: inline-block;
+}

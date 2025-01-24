@@ -12,6 +12,8 @@ var flatFieldLoadedCount = 0;
 var filterData = null;
 var fov = 0;
 var imageWidth = null;
+var largestFilterSize = -1;
+var colors = null;
 
 var ctfPlot = [];
 
@@ -47,6 +49,10 @@ $(document).ready(function () {
         fov = $("input[name=fov]").val();
 
         $(".right").addClass("loading");
+        
+        $("#white span").html("&nbsp;");
+        $("#black span").html("&nbsp;");
+
         setProgress(1);
 
         if (flatfields.length) {
@@ -166,7 +172,7 @@ async function fileLoaded(f) {
     }
 
     loadedCount += 1;
-    plotData[f.srcElement.imageNumber].push(array.getMatrix({ channel: 1 }));
+    plotData[f.srcElement.imageNumber].push(array);
 
     $(".loaded .progress").html(loadedCount + "/" + acquired.length);
     $(".loaded .progress").css("right", (100 - 100 * loadedCount / acquired.length) + "%");
@@ -180,9 +186,7 @@ async function fileLoaded(f) {
             $.each(plotData, function (i, e) {
                 if (e) {
                     // console.log(e);
-                    avg = averageOfMatrixColumns(averageOfMatrices(e));
-                    avg = avg.map(float => Math.round(float));
-                    ret = processCTF(avg.filter(Number.isFinite), imageWidth);
+                    ret = processCTF(e, imageWidth);
                     ctfPlot[i] = ret;
 
                     // Plotly.addTraces("plot", [
@@ -237,6 +241,9 @@ async function fileLoaded(f) {
             Plotly.relayout("plot", {
                 'xaxis.autorange': true
             });
+
+            $("#white span").html(colors["white"]["mean"].toFixed(2)+" &plusmn; "+colors["white"]["std"].toFixed(2));
+            $("#black span").html(colors["black"]["mean"].toFixed(2)+" &plusmn; "+colors["black"]["std"].toFixed(2));
         });
         $(".loaded .progress").html("All images loaded!");
     }
@@ -373,11 +380,16 @@ function fourier_trans(FoV, img) {
         L[i2] = [...L_temp]; // Copy the row
 
         // Calculate FFT and shift the spectrum
-        var out = [];
-        Fourier.transform(L_temp, out);
-        out = out.map(val => val.magnitude());
+        var out = L_temp;
+        var imag = newArrayOfZeros(out.length);
+        transform(out,imag);
 
-        fft_L[i2] = fftshift(out);
+        var out2=[]
+        for(i = 0;i<out.length;i++){
+            out2.push(Math.sqrt(out[i]**2+imag[i]**2));
+        }
+
+        fft_L[i2] = fftshift(out2);
     }
     // console.log(fft_L);
 
@@ -488,7 +500,11 @@ function movingAverageFilter(Signal, filterSize) {
     return Out;
 }
 
-function processCTF(data, imageWidth) {
+function processCTF(image, imageWidth) {
+    avg = averageOfMatrixColumns(averageOfMatrices(image.map(i=>i.getMatrix({ channel: 1 }))));
+    avg = avg.map(float => Math.round(float));
+    data = avg.filter(Number.isFinite)
+
     pixelsPerDegree = Math.round(data.length / fov);
 
     // ftSize = fourier_trans(FOV, Img);
@@ -535,6 +551,32 @@ function processCTF(data, imageWidth) {
         } else {
             firstPeak = valleys[0];
             lastPeak = valleys[valleys.length - 1]
+        }
+
+        if (sizeOfFilter > largestFilterSize) {
+            midSignal = Math.round(peaks.length / 2);
+
+            black=avg.slice(
+                Math.round(valleys[midSignal] + sizeOfFilter * 0.1),
+                Math.round(valleys[midSignal] + sizeOfFilter * 0.1+sizeOfFilter - 0.2 * sizeOfFilter)
+            )
+
+            white=avg.slice(
+                Math.round(peaks[midSignal] + sizeOfFilter * 0.1),
+                Math.round(peaks[midSignal] + sizeOfFilter * 0.1+sizeOfFilter - 0.2 * sizeOfFilter)
+            )
+            colors = {
+                "white": {
+                    "mean": mean(white),
+                    "std": standardDeviation(white)
+                },
+                "black": {
+                    "mean": mean(black),
+                    "std": standardDeviation(black)
+                }
+            }
+
+            largestFilterSize = sizeOfFilter;
         }
     } else {
         valleys = 0;
