@@ -129,9 +129,6 @@ input {
     border-radius: 3px;
     padding: 5px;
     margin-left: 3px;
-}
-
-input[type=file] {
     width: 150px;
 }
 
@@ -143,6 +140,10 @@ input[type=file] {
     padding: 5px;
     background-color: #ddd;
     font-weight: bold;
+}
+
+#start-plot.loading{
+    filter:opacity(0.7)
 }
 
 input[type="radio"] {
@@ -168,7 +169,7 @@ input[type="radio"]:checked+label {
 
 input[type=button]:hover,
 input[type=file]:hover,
-#start-plot:hover {
+#start-plot:not(.loading):hover {
     background: rgb(0, 124, 186);
     cursor: pointer;
     color: white;
@@ -253,7 +254,8 @@ img.sample:hover {
 #colors {
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin: auto;
+    display: table;
 }
 
 #colors li {
@@ -267,7 +269,6 @@ img.sample:hover {
     border: 1px solid rgb(0, 124, 186);
     border-radius: 3px;
     padding: 5px;
-    background-color: #ddd;
     font-weight: bold;
     margin-left: 5px;
     min-width: 100px;

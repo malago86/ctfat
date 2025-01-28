@@ -20,7 +20,7 @@ var ctfPlot = [];
 $(document).ready(function () {
 
     setInterval(function () {
-        percMem = 100 * (window.performance.memory.totalJSHeapSize / window.performance.memory.jsHeapSizeLimit).toFixed(2);;
+        percMem = 100 * (window.performance.memory.totalJSHeapSize / window.performance.memory.jsHeapSizeLimit).toFixed(2);
         $(".memory").html(`Memory: ${percMem}%`);
     }, 10000)
 
@@ -49,6 +49,7 @@ $(document).ready(function () {
         fov = $("input[name=fov]").val();
 
         $(".right").addClass("loading");
+        $("#start-plot").addClass("loading");
         
         $("#white span").html("&nbsp;");
         $("#black span").html("&nbsp;");
@@ -68,7 +69,10 @@ $(document).ready(function () {
                 fr.imageNumber = path[path.length - 2]
             });
         } else {
-            loadAcquiredImages();
+            // loadAcquiredImages();
+            alert("Please select flat white images.");
+            $(".right").removeClass("loading");
+            $("#start-plot").removeClass("loading");
         }
         // console.log(acquired);
     });
@@ -131,17 +135,23 @@ async function loadAcquiredImages() {
     acquired = $('#images').prop('files');
     plotData = [];
     loadedCount = 0;
-    $.each(acquired, function (i, e) {
-        var fr = new FileReader();
-        fr.onload = fileLoaded;
-        //fr.readAsText(file);
-        //fr.readAsBinaryString(file); //as bit work with base64 for example upload to server
-        // console.log(e);
-        fr.readAsDataURL(e);
-        path = e.webkitRelativePath.split("/");
-        fr.num = i;
-        fr.imageNumber = path[path.length - 2]
-    });
+    if(acquired.length==0){
+        alert("Please select the acquired images folder.");
+        $(".right").removeClass("loading");
+        $("#start-plot").removeClass("loading");
+    }else{
+        $.each(acquired, function (i, e) {
+            var fr = new FileReader();
+            fr.onload = fileLoaded;
+            //fr.readAsText(file);
+            //fr.readAsBinaryString(file); //as bit work with base64 for example upload to server
+            // console.log(e);
+            fr.readAsDataURL(e);
+            path = e.webkitRelativePath.split("/");
+            fr.num = i;
+            fr.imageNumber = path[path.length - 2]
+        });
+    }
 }
 
 async function fileLoaded(f) {
@@ -181,6 +191,7 @@ async function fileLoaded(f) {
 
     if (loadedCount == acquired.length) {
         $(".right").removeClass("loading");
+        $("#start-plot").removeClass("loading");
 
         $.when(
             $.each(plotData, function (i, e) {

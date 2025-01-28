@@ -28,10 +28,12 @@
             <table>
                 <tr>
                     <th>LMD/Camera<br>Horizontal FOV (deg)</th>
+                    <td><i class="fa-solid fa-eye"></i></td>
                     <td><input type="text" name="fov" placeholder="Enter FOV Value" value="15.5"></td>
                 </tr>
                 <tr>
                     <th>Pattern Direction</th>
+                    <td><i class="fa-solid fa-file-image"></i></td>
                     <td> <input type="radio" name="direction" value="vertical" id="vertical" checked>
                         <label for="vertical"><i class="fa-solid fa-bars" style="transform:rotate(90deg)"></i></label>
                         <input type="radio" name="direction" value="horizontal" id="horizontal">
@@ -40,14 +42,16 @@
                 </tr>
                 <tr>
                     <th>Flat white images</th>
+                    <td><i class="fa-solid fa-folder-open"></i></td>
                     <td><input type="file" id="flatfield" name="flatfield" webkitdirectory mozdirectory /></td>
                 </tr>
                 <tr>
-                    <th>Acquired Images:</th>
+                    <th>Acquired Images</th>
+                    <td><i class="fa-solid fa-folder-open"></i></td>
                     <td><input type="file" id="images" name="images" webkitdirectory mozdirectory /></td>
                 </tr>
             </table>
-            <div id="start-plot">Plot CTF</div>
+            <div id="start-plot"><i class="fa-solid fa-chart-line"></i> Plot CTF</div>
         </div>
         <div class="right">
             <div id="plot"></div>
@@ -58,8 +62,8 @@
                 <!-- <div class="loaded"><div class="progress"></div></div> -->
             </div>
             <ul id="colors">
-                <li id="white">White: <span>&nbsp;</span></li>
-                <li id="black">Black: <span>&nbsp;</span></li>
+                <li id="white"><i class="fa-regular fa-circle"></i> White: <span>&nbsp;</span></li>
+                <li id="black"><i class="fa-solid fa-circle"></i> Black: <span>&nbsp;</span></li>
             </ul>
         </div>
     </div>
