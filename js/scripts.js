@@ -44,7 +44,8 @@ $(document).ready(function () {
         initializePlot();
         flatFieldLoadedCount = 0;
         flatfields = $('#flatfield').prop('files');
-        flatFieldData = []
+        flatFieldData = [];
+        largestFilterSize = -1;
 
         fov = $("input[name=fov]").val();
 
