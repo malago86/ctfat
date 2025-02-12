@@ -29,7 +29,7 @@
                 <tr>
                     <th>LMD/Camera<br>Horizontal FOV (deg)</th>
                     <td><i class="fa-solid fa-eye"></i></td>
-                    <td><input type="text" name="fov" placeholder="Enter FOV Value" value="15.5"></td>
+                    <td><input type="number" name="fov" placeholder="Enter FOV Value" value="15.5" min="2" max="180" step="0.5" onfocusout="if(value<2) value=2;if(value>180) value=180;"></td>
                 </tr>
                 <tr>
                     <th>Pattern Direction</th>
